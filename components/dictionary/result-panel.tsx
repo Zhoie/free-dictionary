@@ -61,7 +61,7 @@ export default function ResultPanel({ result, onPlayAudio }: ResultPanelProps) {
         <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">
           Current Word
         </p>
-        <h2 className="mt-2 break-words text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl">
+        <h2 className="mt-2 wrap-break-word text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl">
           {primaryEntry.word}
         </h2>
         <p className="mt-1 text-sm text-zinc-600">
@@ -156,7 +156,7 @@ export default function ResultPanel({ result, onPlayAudio }: ResultPanelProps) {
                               aria-hidden
                               className="mt-0.5 shrink-0"
                             />
-                            <span className="break-words">{definition.example}</span>
+                            <span className="wrap-break-word">{definition.example}</span>
                           </p>
                         ) : null}
                       </li>

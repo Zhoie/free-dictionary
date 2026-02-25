@@ -14,9 +14,9 @@ export default async function Home({ searchParams }: HomeProps) {
   const initialQuery = getInitialQuery(params.q);
 
   return (
-    <main className="min-h-[100dvh] overflow-x-clip text-zinc-900">
-      <div className="mx-auto grid min-h-[100dvh] max-w-[1400px] grid-cols-1 gap-4 px-4 py-4 sm:gap-6 sm:py-6 md:px-6 md:py-8 lg:grid-cols-[0.84fr_1.16fr] lg:gap-10 lg:px-10 lg:py-12">
-        <section className="relative overflow-hidden rounded-[2rem] border border-zinc-800/60 bg-zinc-950 px-5 py-6 text-zinc-100 shadow-[0_30px_80px_-45px_rgba(15,23,42,0.9)] sm:rounded-[2.5rem] sm:px-6 sm:py-8 md:px-8 md:py-10">
+    <main className="min-h-dvh overflow-x-clip text-zinc-900">
+      <div className="mx-auto grid min-h-dvh max-w-350 grid-cols-1 gap-4 px-4 py-4 sm:gap-6 sm:py-6 md:px-6 md:py-8 lg:grid-cols-[0.84fr_1.16fr] lg:gap-10 lg:px-10 lg:py-12">
+        <section className="relative overflow-hidden rounded-4xl border border-zinc-800/60 bg-zinc-950 px-5 py-6 text-zinc-100 shadow-[0_30px_80px_-45px_rgba(15,23,42,0.9)] sm:rounded-[2.5rem] sm:px-6 sm:py-8 md:px-8 md:py-10">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_18%,rgba(31,143,98,0.44),transparent_44%),radial-gradient(circle_at_90%_8%,rgba(255,255,255,0.14),transparent_33%)]" />
           <div className="relative flex h-full flex-col justify-between gap-10">
             <div className="space-y-6">

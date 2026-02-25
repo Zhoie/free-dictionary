@@ -219,7 +219,7 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
   }, [currentQuery, requestError, result, status]);
 
   return (
-    <section className="relative overflow-hidden rounded-[2rem] border border-zinc-200/80 bg-white/90 p-5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)] before:pointer-events-none before:absolute before:inset-0 before:rounded-[1.95rem] before:border before:border-white/40 before:shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] sm:rounded-[2.5rem] sm:p-6 sm:before:rounded-[2.45rem] md:p-10">
+    <section className="relative overflow-hidden rounded-4xl border border-zinc-200/80 bg-white/90 p-5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)] before:pointer-events-none before:absolute before:inset-0 before:rounded-[1.95rem] before:border before:border-white/40 before:shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] sm:rounded-[2.5rem] sm:p-6 sm:before:rounded-[2.45rem] md:p-10">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_100%_0%,rgba(31,143,98,0.09),transparent_40%)]" />
       <div className="relative flex flex-col gap-8">
         <header className="space-y-2">
@@ -242,7 +242,7 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
           {liveMessage}
         </p>
 
-        <div className="min-h-[280px] sm:min-h-[320px]">
+        <div className="min-h-70 sm:min-h-80">
           <AnimatePresence mode="wait">
             {status === "idle" ? (
               <motion.div

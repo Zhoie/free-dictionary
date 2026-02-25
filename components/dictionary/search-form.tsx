@@ -38,7 +38,7 @@ export default function SearchForm({
             onChange={(event) => onValueChange(event.target.value)}
             placeholder="Type a word, for example: cadence"
             className="w-full rounded-2xl border border-zinc-300 bg-white px-10 py-3 text-base text-zinc-900 outline-none transition duration-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-            aria-invalid={Boolean(fieldError)}
+            aria-invalid={fieldError ? "true" : undefined}
             aria-describedby="dictionary-input-help dictionary-input-error"
           />
         </div>
