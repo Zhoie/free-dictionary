@@ -219,14 +219,14 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
   }, [currentQuery, requestError, result, status]);
 
   return (
-    <section className="relative overflow-hidden rounded-4xl border border-zinc-200/80 bg-white/90 p-5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)] before:pointer-events-none before:absolute before:inset-0 before:rounded-[1.95rem] before:border before:border-white/40 before:shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] sm:rounded-[2.5rem] sm:p-6 sm:before:rounded-[2.45rem] md:p-10">
+    <section className="relative h-full min-h-0 overflow-hidden rounded-[2rem] border border-zinc-200/80 bg-white/90 p-4 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)] before:pointer-events-none before:absolute before:inset-0 before:rounded-[1.95rem] before:border before:border-white/40 before:shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] sm:p-5 md:rounded-[2.4rem] md:p-6 md:before:rounded-[2.35rem]">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_100%_0%,rgba(31,143,98,0.09),transparent_40%)]" />
-      <div className="relative flex flex-col gap-8">
-        <header className="space-y-2">
+      <div className="relative flex h-full min-h-0 flex-col gap-4">
+        <header className="space-y-1.5">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
             Lexical Search
           </p>
-          <h2 className="text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl">
+          <h2 className="text-2xl font-semibold tracking-tight text-zinc-900 text-balance sm:text-3xl">
             English Dictionary
           </h2>
         </header>
@@ -242,7 +242,7 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
           {liveMessage}
         </p>
 
-        <div className="min-h-70 sm:min-h-80">
+        <div className="min-h-0 flex-1">
           <AnimatePresence mode="wait">
             {status === "idle" ? (
               <motion.div
@@ -251,6 +251,7 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ type: "spring", stiffness: 100, damping: 20 }}
+                className="h-full"
               >
                 <EmptyState />
               </motion.div>
@@ -263,6 +264,7 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ type: "spring", stiffness: 100, damping: 20 }}
+                className="h-full"
               >
                 <LoadingState />
               </motion.div>
@@ -275,6 +277,7 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ type: "spring", stiffness: 100, damping: 20 }}
+                className="h-full"
               >
                 <ErrorState
                   message={requestError ?? "Could not load dictionary data."}
@@ -290,6 +293,7 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ type: "spring", stiffness: 100, damping: 20 }}
+                className="h-full"
               >
                 <ResultPanel result={result} onPlayAudio={handlePlayAudio} />
               </motion.div>
