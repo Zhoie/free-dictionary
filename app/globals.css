@@ -35,3 +35,118 @@ a {
 ::selection {
   background: rgb(31 143 98 / 24%);
 }
+
+.hero-star {
+  position: absolute;
+  display: block;
+  border-radius: 1px;
+  background: rgb(222 241 232 / 0.7);
+  clip-path: polygon(
+    50% 0%,
+    62% 36%,
+    100% 50%,
+    62% 64%,
+    50% 100%,
+    38% 64%,
+    0% 50%,
+    38% 36%
+  );
+  transform-origin: 50% 50%;
+  animation-name: hero-star-spin;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  animation-iteration-count: infinite;
+}
+
+.lexi-title {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 24rem;
+}
+
+.lexi-free-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.lexi-free-letter {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.95rem;
+  min-height: 3.3rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 1rem;
+  border: 3px solid #f1e4be;
+  background:
+    radial-gradient(circle at 26% 30%, rgb(255 255 255 / 0.28), transparent 45%),
+    #4f4c7f;
+  box-shadow:
+    inset 0 -8px 0 rgb(34 34 70 / 0.38),
+    0 6px 0 rgb(25 28 62 / 0.48);
+  color: #f5e8bf;
+  font-family: var(--font-geist-sans), "Helvetica Neue", sans-serif;
+  font-size: 2.35rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 0 rgb(42 40 78 / 0.55);
+}
+
+.lexi-free-letter::after {
+  content: "";
+  position: absolute;
+  inset: 34% 20% 14% 20%;
+  border-radius: 9999px;
+  background-image: radial-gradient(circle, rgb(245 232 191 / 0.76) 1.4px, transparent 1.5px);
+  background-size: 6px 6px;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.lexi-dictionary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.42rem;
+}
+
+.lexi-dictionary-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.65rem;
+  border-radius: 0.8rem;
+  border: 3px solid rgb(242 226 187 / 0.9);
+  box-shadow:
+    inset 0 -5px 0 rgb(41 52 85 / 0.35),
+    0 4px 0 rgb(41 52 85 / 0.35);
+  color: #f7ecd2;
+  font-family: var(--font-geist-sans), "Helvetica Neue", sans-serif;
+  font-size: 1.32rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+}
+
+@keyframes hero-star-spin {
+  0% {
+    transform: rotate(0deg) translateY(0);
+    opacity: 0.56;
+  }
+  50% {
+    transform: rotate(180deg) translateY(-4px);
+    opacity: 0.9;
+  }
+  100% {
+    transform: rotate(360deg) translateY(0);
+    opacity: 0.56;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-star {
+    animation: none;
+    opacity: 0.7;
+  }
+}

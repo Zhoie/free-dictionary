@@ -9,6 +9,33 @@ const getInitialQuery = (queryValue: string | string[] | undefined) => {
   return (firstValue ?? "").trim().toLowerCase();
 };
 
+const freeLetters = ["F", "R", "E", "E"];
+
+const dictionaryTiles = [
+  { letter: "D", color: "#8dc7af", rotate: "-7deg" },
+  { letter: "I", color: "#ea6571", rotate: "6deg" },
+  { letter: "C", color: "#f0be42", rotate: "-5deg" },
+  { letter: "T", color: "#b7d7dd", rotate: "7deg" },
+  { letter: "I", color: "#89beac", rotate: "-6deg" },
+  { letter: "O", color: "#f0be42", rotate: "5deg" },
+  { letter: "N", color: "#b7d7dd", rotate: "-7deg" },
+  { letter: "A", color: "#8dc7af", rotate: "6deg" },
+  { letter: "R", color: "#ea6571", rotate: "-5deg" },
+  { letter: "Y", color: "#89beac", rotate: "4deg" },
+] as const;
+
+const heroStars = [
+  { top: "8%", left: "10%", size: 18, duration: "13s", delay: "-2s" },
+  { top: "14%", left: "68%", size: 12, duration: "10s", delay: "-4s" },
+  { top: "26%", left: "34%", size: 14, duration: "15s", delay: "-1s" },
+  { top: "36%", left: "82%", size: 16, duration: "11s", delay: "-6s" },
+  { top: "48%", left: "20%", size: 12, duration: "12s", delay: "-3s" },
+  { top: "60%", left: "56%", size: 15, duration: "16s", delay: "-8s" },
+  { top: "72%", left: "86%", size: 12, duration: "10s", delay: "-2s" },
+  { top: "86%", left: "12%", size: 14, duration: "14s", delay: "-5s" },
+  { top: "90%", left: "62%", size: 16, duration: "12s", delay: "-7s" },
+] as const;
+
 export default async function Home({ searchParams }: HomeProps) {
   const params = await searchParams;
   const initialQuery = getInitialQuery(params.q);
@@ -18,17 +45,54 @@ export default async function Home({ searchParams }: HomeProps) {
       <div className="mx-auto grid h-full max-w-[1400px] grid-cols-1 gap-3 px-3 py-3 sm:gap-4 sm:px-4 sm:py-4 md:px-6 md:py-6 lg:grid-cols-[minmax(280px,0.78fr)_minmax(0,1.22fr)] lg:gap-6">
         <section className="relative hidden h-full min-h-0 overflow-hidden rounded-[2rem] border border-zinc-800/60 bg-zinc-950 p-6 text-zinc-100 shadow-[0_30px_80px_-45px_rgba(15,23,42,0.9)] lg:flex lg:flex-col">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_14%_18%,rgba(31,143,98,0.38),transparent_44%),radial-gradient(circle_at_90%_8%,rgba(255,255,255,0.16),transparent_35%)]" />
+          <div className="hero-starfield pointer-events-none absolute inset-0" aria-hidden>
+            {heroStars.map((star, index) => (
+              <span
+                key={`${star.top}-${star.left}-${index}`}
+                className="hero-star"
+                style={{
+                  top: star.top,
+                  left: star.left,
+                  width: `${star.size}px`,
+                  height: `${star.size}px`,
+                  animationDuration: star.duration,
+                  animationDelay: star.delay,
+                }}
+              />
+            ))}
+          </div>
           <div className="relative flex h-full flex-col gap-6">
             <div className="space-y-4">
               <p className="inline-flex w-fit items-center rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.2em] text-zinc-200">
                 Dictionary API
               </p>
-              <h1 className="text-4xl leading-none tracking-tighter text-white xl:text-5xl">
-                Fast lookup, screen-first layout.
-              </h1>
+              <h1 className="sr-only">Free Dictionary</h1>
+              <div className="lexi-title" aria-hidden>
+                <div className="lexi-free-row">
+                  {freeLetters.map((letter, index) => (
+                    <span key={`${letter}-${index}`} className="lexi-free-letter">
+                      {letter}
+                    </span>
+                  ))}
+                </div>
+                <div className="lexi-dictionary-grid">
+                  {dictionaryTiles.map((tile, index) => (
+                    <span
+                      key={`${tile.letter}-${index}`}
+                      className="lexi-dictionary-tile"
+                      style={{
+                        backgroundColor: tile.color,
+                        transform: `rotate(${tile.rotate})`,
+                      }}
+                    >
+                      {tile.letter}
+                    </span>
+                  ))}
+                </div>
+              </div>
               <p className="max-w-[40ch] text-sm leading-relaxed text-zinc-300">
-                Layout is arranged for viewport fit: no page scrolling, compact
-                data cards, and navigable definition pages.
+                Search English words with phonetics, examples, and shareable
+                URLs.
               </p>
             </div>
             <div className="grid gap-3">

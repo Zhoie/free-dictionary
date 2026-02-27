@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Signal Lexicon",
+  title: "Free Dictionary",
   description:
     "Search English words with definitions, phonetics, examples, and shareable query URLs.",
 };

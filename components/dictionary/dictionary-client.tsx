@@ -224,10 +224,10 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
       <div className="relative flex h-full min-h-0 flex-col gap-4">
         <header className="space-y-1.5">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
-            Lexical Search
+            Dictionary API
           </p>
           <h2 className="text-2xl font-semibold tracking-tight text-zinc-900 text-balance sm:text-3xl">
-            English Dictionary
+            Free Dictionary
           </h2>
         </header>
 
