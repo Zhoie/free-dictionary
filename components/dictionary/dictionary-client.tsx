@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   useCallback,
   useEffect,
@@ -16,33 +16,71 @@ import {
   EmptyState,
   ErrorState,
   LoadingState,
+  NotFoundState,
 } from "@/components/dictionary/state-views";
-import { isValidTermInput, sanitizeTerm } from "@/lib/dictionary";
-import type { DictionaryResult } from "@/types/dictionary";
+import {
+  SUGGESTED_TERMS,
+  isValidTermInput,
+  sanitizeTerm,
+} from "@/lib/dictionary";
+import type { DictionaryErrorCode, DictionaryResult } from "@/types/dictionary";
 
 type DictionaryClientProps = {
   initialQuery: string;
 };
 
-type ViewStatus = "idle" | "loading" | "success" | "error";
+type ViewStatus = "idle" | "loading" | "success" | "not-found" | "error";
 
-const readErrorMessage = (payload: unknown): string | null => {
+const boardStars = [
+  { top: "8%", left: "14%", size: 16, duration: "13s", delay: "-2s" },
+  { top: "10%", left: "82%", size: 13, duration: "10s", delay: "-4s" },
+  { top: "25%", left: "69%", size: 15, duration: "12s", delay: "-1s" },
+  { top: "38%", left: "89%", size: 18, duration: "14s", delay: "-6s" },
+  { top: "53%", left: "18%", size: 13, duration: "11s", delay: "-3s" },
+  { top: "61%", left: "76%", size: 16, duration: "15s", delay: "-5s" },
+  { top: "78%", left: "88%", size: 14, duration: "10s", delay: "-7s" },
+  { top: "88%", left: "63%", size: 17, duration: "12s", delay: "-2s" },
+] as const;
+
+const MOTION_EASE = [0.22, 1, 0.36, 1] as const;
+
+const isDictionaryErrorCode = (value: unknown): value is DictionaryErrorCode =>
+  value === "INVALID_TERM" || value === "NOT_FOUND" || value === "UPSTREAM_ERROR";
+
+const readErrorDetails = (
+  payload: unknown,
+): { code: DictionaryErrorCode | null; message: string | null } => {
   if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
-    return null;
+    return { code: null, message: null };
   }
 
   const messageValue = (payload as { message?: unknown }).message;
-  if (typeof messageValue !== "string") {
-    return null;
-  }
+  const codeValue = (payload as { code?: unknown }).code;
+  const message =
+    typeof messageValue === "string" && messageValue.trim().length > 0
+      ? messageValue.trim()
+      : null;
 
-  const trimmed = messageValue.trim();
-  return trimmed.length > 0 ? trimmed : null;
+  return {
+    code: isDictionaryErrorCode(codeValue) ? codeValue : null,
+    message,
+  };
 };
+
+class LookupError extends Error {
+  constructor(
+    message: string,
+    readonly code: DictionaryErrorCode | null = null,
+  ) {
+    super(message);
+    this.name = "LookupError";
+  }
+}
 
 export default function DictionaryClient({ initialQuery }: DictionaryClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const shouldReduceMotion = useReducedMotion();
   const [isNavigating, startNavigationTransition] = useTransition();
 
   const searchParamsString = searchParams.toString();
@@ -55,10 +93,17 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
   const [status, setStatus] = useState<ViewStatus>(initialQuery ? "loading" : "idle");
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
+  const [audioError, setAudioError] = useState<string | null>(null);
   const [result, setResult] = useState<DictionaryResult | null>(null);
 
   const controllerRef = useRef<AbortController | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const panelTransition = shouldReduceMotion
+    ? { duration: 0 }
+    : { duration: 0.24, ease: MOTION_EASE };
+  const isBusy = status === "loading" || isNavigating;
+  const isSuccessView = status === "success" && result !== null;
 
   const replaceQuery = useCallback(
     (nextParams: URLSearchParams) => {
@@ -80,6 +125,7 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
 
     setStatus("loading");
     setRequestError(null);
+    setAudioError(null);
 
     try {
       const response = await fetch(`/api/dictionary?term=${encodeURIComponent(term)}`, {
@@ -88,13 +134,19 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
       });
 
       const payload: unknown = await response.json().catch(() => null);
+      const { code, message } = readErrorDetails(payload);
 
       if (!response.ok) {
         const fallbackMessage =
           response.status === 404
-            ? `No definitions found for "${term}".`
-            : "Dictionary request failed.";
-        throw new Error(readErrorMessage(payload) ?? fallbackMessage);
+            ? `No entry found for "${term}". Try a nearby spelling or a different form of the word.`
+            : response.status === 400
+              ? "Use letters, spaces, apostrophes, or hyphens only."
+              : "Dictionary service is unavailable right now.";
+        throw new LookupError(
+          code === "NOT_FOUND" ? fallbackMessage : message ?? fallbackMessage,
+          code,
+        );
       }
 
       setResult(payload as DictionaryResult);
@@ -104,13 +156,18 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
         return;
       }
 
+      const lookupError =
+        error instanceof LookupError
+          ? error
+          : new LookupError(
+              error instanceof Error
+                ? error.message
+                : "Unexpected lookup error. Please try again.",
+            );
+
       setResult(null);
-      setRequestError(
-        error instanceof Error
-          ? error.message
-          : "Unexpected lookup error. Please try again.",
-      );
-      setStatus("error");
+      setRequestError(lookupError.message);
+      setStatus(lookupError.code === "NOT_FOUND" ? "not-found" : "error");
     } finally {
       if (controllerRef.current === controller) {
         controllerRef.current = null;
@@ -124,10 +181,22 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
       setStatus("idle");
       setResult(null);
       setRequestError(null);
+      setAudioError(null);
       return;
     }
 
     setInputValue(currentQuery);
+
+    if (!isValidTermInput(currentQuery)) {
+      controllerRef.current?.abort();
+      setFieldError("Use letters, spaces, apostrophes, or hyphens only.");
+      setStatus("idle");
+      setResult(null);
+      setRequestError(null);
+      setAudioError(null);
+      return;
+    }
+
     void lookupWord(currentQuery);
   }, [currentQuery, lookupWord]);
 
@@ -180,6 +249,20 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
   const handleValueChange = useCallback((value: string) => {
     setInputValue(value);
     setFieldError(null);
+    setAudioError(null);
+  }, []);
+
+  const handleSuggestionSelect = useCallback((term: string) => {
+    setInputValue(term);
+    setFieldError(null);
+    setAudioError(null);
+  }, []);
+
+  const handleClear = useCallback(() => {
+    setInputValue("");
+    setFieldError(null);
+    setRequestError(null);
+    setAudioError(null);
   }, []);
 
   const handleRetry = useCallback(() => {
@@ -189,6 +272,8 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
   }, [currentQuery, lookupWord]);
 
   const handlePlayAudio = useCallback((audioUrl: string) => {
+    setAudioError(null);
+
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
@@ -198,7 +283,9 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
     audioRef.current = nextAudio;
 
     void nextAudio.play().catch(() => {
-      setRequestError("Audio playback was blocked by the browser.");
+      setAudioError(
+        "Audio playback was blocked by the browser. Turn on sound permissions and try again.",
+      );
     });
   }, []);
 
@@ -211,30 +298,63 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
       return requestError;
     }
 
+    if (status === "not-found" && requestError) {
+      return requestError;
+    }
+
     if (status === "success" && result) {
+      if (audioError) {
+        return audioError;
+      }
+
       return `Loaded ${result.entries.length} definition groups for ${result.term}.`;
     }
 
     return "Waiting for a search term.";
-  }, [currentQuery, requestError, result, status]);
+  }, [audioError, currentQuery, requestError, result, status]);
 
   return (
-    <section className="relative h-full min-h-0 overflow-hidden rounded-[2rem] border border-zinc-200/80 bg-white/90 p-4 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)] before:pointer-events-none before:absolute before:inset-0 before:rounded-[1.95rem] before:border before:border-white/40 before:shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] sm:p-5 md:rounded-[2.4rem] md:p-6 md:before:rounded-[2.35rem]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_100%_0%,rgba(31,143,98,0.09),transparent_40%)]" />
-      <div className="relative flex h-full min-h-0 flex-col gap-4">
-        <header className="space-y-1.5">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+    <section
+      aria-busy={isBusy}
+      className="board-shell relative flex min-h-full flex-col rounded-[2rem] p-5 sm:p-6 md:rounded-[2.4rem] md:p-7"
+    >
+      <div className="board-starfield pointer-events-none absolute inset-0" aria-hidden>
+        {boardStars.map((star, index) => (
+          <span
+            key={`${star.top}-${star.left}-${index}`}
+            className="board-star"
+            style={{
+              top: star.top,
+              left: star.left,
+              width: `${star.size}px`,
+              height: `${star.size}px`,
+              animationDuration: star.duration,
+              animationDelay: star.delay,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="relative z-[1] flex flex-col gap-5">
+        <header className="space-y-2">
+          <p className="section-label board-caption">
             Dictionary API
           </p>
-          <h2 className="text-2xl font-semibold tracking-tight text-zinc-900 text-balance sm:text-3xl">
+          <h2 className="board-title text-[clamp(2.4rem,5vw,4rem)] leading-[0.94] text-balance">
             Free Dictionary
           </h2>
+          <p className="board-copy max-w-[42ch] text-sm leading-relaxed">
+            Pronunciation, definitions, and sources in one playful board.
+          </p>
         </header>
 
         <SearchForm
           value={inputValue}
-          isLoading={status === "loading" || isNavigating}
+          isLoading={isBusy}
           fieldError={fieldError}
+          suggestions={SUGGESTED_TERMS}
+          onClear={handleClear}
+          onSuggestionSelect={handleSuggestionSelect}
           onValueChange={handleValueChange}
         />
 
@@ -242,41 +362,61 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
           {liveMessage}
         </p>
 
-        <div className="min-h-0 flex-1">
+        <div className={isSuccessView ? "pt-1" : "min-h-0 flex-1 pt-1"}>
           <AnimatePresence mode="wait">
             {status === "idle" ? (
               <motion.div
                 key="idle"
-                initial={{ opacity: 0, y: 10 }}
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ type: "spring", stiffness: 100, damping: 20 }}
+                exit={shouldReduceMotion ? undefined : { opacity: 0, y: -8 }}
+                transition={panelTransition}
                 className="h-full"
               >
-                <EmptyState />
+                <EmptyState
+                  suggestions={SUGGESTED_TERMS}
+                  onSuggestionSelect={handleSuggestionSelect}
+                />
               </motion.div>
             ) : null}
 
             {status === "loading" ? (
               <motion.div
                 key="loading"
-                initial={{ opacity: 0, y: 10 }}
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ type: "spring", stiffness: 100, damping: 20 }}
+                exit={shouldReduceMotion ? undefined : { opacity: 0, y: -8 }}
+                transition={panelTransition}
                 className="h-full"
               >
-                <LoadingState />
+                <LoadingState query={currentQuery} />
+              </motion.div>
+            ) : null}
+
+            {status === "not-found" ? (
+              <motion.div
+                key="not-found"
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={shouldReduceMotion ? undefined : { opacity: 0, y: -8 }}
+                transition={panelTransition}
+                className="h-full"
+              >
+                <NotFoundState
+                  query={currentQuery || inputValue}
+                  suggestions={SUGGESTED_TERMS}
+                  onSuggestionSelect={handleSuggestionSelect}
+                />
               </motion.div>
             ) : null}
 
             {status === "error" ? (
               <motion.div
                 key="error"
-                initial={{ opacity: 0, y: 10 }}
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ type: "spring", stiffness: 100, damping: 20 }}
+                exit={shouldReduceMotion ? undefined : { opacity: 0, y: -8 }}
+                transition={panelTransition}
                 className="h-full"
               >
                 <ErrorState
@@ -289,13 +429,17 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
             {status === "success" && result ? (
               <motion.div
                 key={`result-${result.term}`}
-                initial={{ opacity: 0, y: 10 }}
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ type: "spring", stiffness: 100, damping: 20 }}
-                className="h-full"
+                exit={shouldReduceMotion ? undefined : { opacity: 0, y: -8 }}
+                transition={panelTransition}
+                className="w-full"
               >
-                <ResultPanel result={result} onPlayAudio={handlePlayAudio} />
+                <ResultPanel
+                  result={result}
+                  audioError={audioError}
+                  onPlayAudio={handlePlayAudio}
+                />
               </motion.div>
             ) : null}
           </AnimatePresence>

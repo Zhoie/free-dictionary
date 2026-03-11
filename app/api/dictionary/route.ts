@@ -55,11 +55,15 @@ export async function GET(request: Request) {
     if (upstreamResponse.status === 404) {
       const notFoundPayload = await readJson(upstreamResponse);
       const upstreamMessage = extractUpstreamErrorMessage(notFoundPayload);
+      const fallbackNotFoundMessage = `No entry found for "${term}". Try a nearby spelling or a different form of the word.`;
 
       return jsonError({
         code: "NOT_FOUND",
         status: 404,
-        message: upstreamMessage ?? `No definitions found for "${term}".`,
+        message:
+          upstreamMessage && upstreamMessage.length < 140
+            ? upstreamMessage
+            : fallbackNotFoundMessage,
       });
     }
 

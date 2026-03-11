@@ -8,6 +8,13 @@ import type {
 
 const TERM_PATTERN = /^[a-zA-Z][a-zA-Z\s'-]*$/;
 
+export const SUGGESTED_TERMS = [
+  "cadence",
+  "lucid",
+  "threshold",
+  "harbor",
+] as const;
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
