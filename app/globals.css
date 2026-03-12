@@ -34,11 +34,7 @@
 
 html {
   min-height: 100%;
-}
-
-body {
-  margin: 0;
-  min-height: 100dvh;
+  background-color: var(--board-green-deep);
   background:
     radial-gradient(circle at 16% 18%, var(--board-glow), transparent 30%),
     radial-gradient(circle at 82% 8%, rgb(255 255 255 / 0.08), transparent 26%),
@@ -48,12 +44,41 @@ body {
       rgb(10 55 48 / 0.98) 56%,
       rgb(52 53 76 / 0.95) 100%
     );
+}
+
+body {
+  margin: 0;
+  min-height: 100%;
+  background: transparent;
   color: var(--cream-soft);
   font-family: var(--font-geist-sans), "Helvetica Neue", sans-serif;
   line-height: 1.5;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
   color-scheme: dark;
+}
+
+.page-shell {
+  --page-shell-block-pad: 1.5rem;
+  min-height: 100vh;
+  min-height: 100svh;
+}
+
+.page-shell-content {
+  min-height: calc(100vh - var(--page-shell-block-pad));
+  min-height: calc(100svh - var(--page-shell-block-pad));
+}
+
+@media (min-width: 640px) {
+  .page-shell {
+    --page-shell-block-pad: 2rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .page-shell {
+    --page-shell-block-pad: 3rem;
+  }
 }
 
 a {
