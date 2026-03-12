@@ -226,6 +226,12 @@ select {
   line-height: 1;
 }
 
+.toy-term-pill {
+  min-height: 42px;
+  padding: 0.58rem 0.96rem;
+  font-size: 0.92rem;
+}
+
 .toy-badge {
   min-height: 34px;
   padding: 0.42rem 0.78rem;

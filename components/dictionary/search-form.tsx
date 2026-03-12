@@ -1,10 +1,15 @@
+"use client";
+
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { MagnifyingGlass, X } from "@phosphor-icons/react";
 import type { CSSProperties } from "react";
 import SuggestionChips from "@/components/dictionary/suggestion-chips";
+import { sanitizeTerm } from "@/lib/dictionary";
 
 type SearchFormProps = {
   value: string;
   isLoading: boolean;
+  showSuggestions: boolean;
   fieldError: string | null;
   suggestions: readonly string[];
   onClear: () => void;
@@ -15,12 +20,16 @@ type SearchFormProps = {
 export default function SearchForm({
   value,
   isLoading,
+  showSuggestions,
   fieldError,
   suggestions,
   onClear,
   onSuggestionSelect,
   onValueChange,
 }: SearchFormProps) {
+  const shouldReduceMotion = useReducedMotion();
+  const hasSuggestionRail = showSuggestions && sanitizeTerm(value).length > 0;
+
   return (
     <div className="grid gap-4">
       <div className="flex items-center justify-between gap-3">
@@ -95,16 +104,27 @@ export default function SearchForm({
           {fieldError ?? "\u00A0"}
         </p>
 
-        <div className="flex flex-wrap items-start gap-3">
-          <span className="section-label board-caption pt-3">
-            Try
-          </span>
-          <SuggestionChips
-            suggestions={suggestions}
-            activeTerm={value}
-            onSuggestionSelect={onSuggestionSelect}
-          />
-        </div>
+        <AnimatePresence initial={false}>
+          {hasSuggestionRail ? (
+            <motion.div
+              key="try-rail"
+              initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: -8 }}
+              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              className="flex flex-wrap items-start gap-3"
+            >
+              <span className="section-label board-caption pt-3">
+                Try
+              </span>
+              <SuggestionChips
+                suggestions={suggestions}
+                activeTerm={value}
+                onSuggestionSelect={onSuggestionSelect}
+              />
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -21,7 +21,7 @@ type LoadingStateProps = {
   query: string;
 };
 
-type NotFoundStateProps = SuggestionStateProps & {
+type NotFoundStateProps = {
   query: string;
 };
 
@@ -106,11 +106,7 @@ export function LoadingState({ query }: LoadingStateProps) {
   );
 }
 
-export function NotFoundState({
-  query,
-  suggestions,
-  onSuggestionSelect,
-}: NotFoundStateProps) {
+export function NotFoundState({ query }: NotFoundStateProps) {
   return (
     <section className="calm-panel grid h-auto content-start gap-4 rounded-[1.8rem] p-5 sm:p-6 lg:h-full">
       <div className="flex items-center gap-2 text-[var(--ink-strong)]">
@@ -121,12 +117,8 @@ export function NotFoundState({
       </div>
       <p className="max-w-[42ch] text-sm leading-relaxed text-[var(--ink-muted)]">
         Nothing turned up for{" "}
-        <span className="font-semibold">{query || "that search"}</span>. Try a nearby spelling or jump to a related term.
+        <span className="font-semibold">{query || "that search"}</span>. Try a nearby spelling or a different form of the word.
       </p>
-      <SuggestionChips
-        suggestions={suggestions}
-        onSuggestionSelect={onSuggestionSelect}
-      />
     </section>
   );
 }

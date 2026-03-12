@@ -250,6 +250,31 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
     }
   }, [refreshSuggestions]);
 
+  const lookupTermImmediately = useCallback(
+    (rawTerm: string) => {
+      const nextTerm = sanitizeTerm(rawTerm);
+
+      if (!nextTerm || !isValidTermInput(nextTerm)) {
+        return;
+      }
+
+      setInputValue(nextTerm);
+      setFieldError(null);
+      setRequestError(null);
+      setAudioError(null);
+
+      if (nextTerm === currentQuery) {
+        void lookupWord(nextTerm);
+        return;
+      }
+
+      const nextParams = new URLSearchParams(searchParamsString);
+      nextParams.set("q", nextTerm);
+      replaceQuery(nextParams);
+    },
+    [currentQuery, lookupWord, replaceQuery, searchParamsString],
+  );
+
   useEffect(() => {
     if (!currentQuery) {
       controllerRef.current?.abort();
@@ -305,7 +330,7 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
       const nextParams = new URLSearchParams(searchParamsString);
       nextParams.set("q", term);
       replaceQuery(nextParams);
-    }, 320);
+    }, sanitizeTerm(inputValue) ? 320 : 0);
 
     return () => {
       window.clearTimeout(debounceId);
@@ -327,19 +352,33 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
   }, []);
 
   const handleValueChange = useCallback((value: string) => {
-    setInputValue(value);
+    const nextValue = value;
+    const nextTerm = sanitizeTerm(nextValue);
+
+    setInputValue(nextValue);
     setFieldError(null);
+    setRequestError(null);
     setAudioError(null);
+
+    if (!nextTerm) {
+      controllerRef.current?.abort();
+      setStatus("idle");
+      setResult(null);
+    }
   }, []);
 
   const handleSuggestionSelect = useCallback((term: string) => {
     setInputValue(term);
     setFieldError(null);
+    setRequestError(null);
     setAudioError(null);
   }, []);
 
   const handleClear = useCallback(() => {
+    controllerRef.current?.abort();
     setInputValue("");
+    setStatus("idle");
+    setResult(null);
     setFieldError(null);
     setRequestError(null);
     setAudioError(null);
@@ -419,9 +458,6 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
 
       <div className="relative z-[1] flex flex-col gap-5">
         <header className="space-y-2">
-          <p className="section-label board-caption">
-            Dictionary API
-          </p>
           <h2 className="board-title text-[clamp(2.4rem,5vw,4rem)] leading-[0.94] text-balance">
             Free Dictionary
           </h2>
@@ -433,6 +469,7 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
         <SearchForm
           value={inputValue}
           isLoading={isBusy}
+          showSuggestions={Boolean(sanitizeTerm(inputValue)) && status !== "not-found"}
           fieldError={fieldError}
           suggestions={suggestions}
           onClear={handleClear}
@@ -486,8 +523,6 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
               >
                 <NotFoundState
                   query={currentQuery || inputValue}
-                  suggestions={suggestions}
-                  onSuggestionSelect={handleSuggestionSelect}
                 />
               </motion.div>
             ) : null}
@@ -521,6 +556,7 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
                   result={result}
                   audioError={audioError}
                   onPlayAudio={handlePlayAudio}
+                  onTermSelect={lookupTermImmediately}
                 />
               </motion.div>
             ) : null}

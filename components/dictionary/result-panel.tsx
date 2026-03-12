@@ -6,14 +6,20 @@ import {
   SpeakerHigh,
   SpeakerSlash,
 } from "@phosphor-icons/react";
-import { motion, type Variants, useReducedMotion } from "framer-motion";
-import { useCallback, useMemo, useRef, type CSSProperties } from "react";
+import {
+  AnimatePresence,
+  motion,
+  type Variants,
+  useReducedMotion,
+} from "framer-motion";
+import { useCallback, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { DictionaryResult } from "@/types/dictionary";
 
 type ResultPanelProps = {
   result: DictionaryResult;
   audioError: string | null;
   onPlayAudio: (audioUrl: string) => void;
+  onTermSelect: (term: string) => void;
 };
 
 type SenseRecord = {
@@ -53,14 +59,7 @@ const containerVariants: Variants = {
 };
 
 const uniqueStrings = (values: string[]) => [...new Set(values)];
-
-const summarizeTerms = (values: string[], limit = 8) => {
-  const unique = uniqueStrings(values.filter(Boolean));
-  return {
-    shown: unique.slice(0, limit),
-    hiddenCount: Math.max(unique.length - limit, 0),
-  };
-};
+const TERM_PILL_LIMIT = 6;
 
 const slugify = (value: string) =>
   value
@@ -80,39 +79,90 @@ const formatSourceLabel = (url: string) => {
 function TermPillGroup({
   label,
   values,
+  onTermSelect,
   className = "mt-4",
 }: {
   label: string;
   values: string[];
+  onTermSelect: (term: string) => void;
   className?: string;
 }) {
-  const summary = summarizeTerms(values, 6);
+  const shouldReduceMotion = useReducedMotion();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const allValues = useMemo(
+    () => uniqueStrings(values.filter(Boolean)),
+    [values],
+  );
+  const hiddenCount = Math.max(allValues.length - TERM_PILL_LIMIT, 0);
+  const visibleValues = isExpanded ? allValues : allValues.slice(0, TERM_PILL_LIMIT);
 
-  if (summary.shown.length === 0) {
+  if (allValues.length === 0) {
     return null;
   }
 
   return (
-    <div className={`${className} space-y-2`}>
+    <motion.div layout className={`${className} space-y-2`}>
       <p className="section-label text-[var(--ink-subtle)]">
         {label}
       </p>
-      <div className="flex flex-wrap gap-2">
-        {summary.shown.map((value) => (
-          <span
-            key={value}
-            className="rounded-full border border-[#e3cf98] bg-white/88 px-2.5 py-1 text-sm text-[var(--ink-muted)]"
+      <motion.div layout className="flex flex-wrap gap-2">
+        <AnimatePresence initial={false}>
+          {visibleValues.map((value, index) => (
+            <motion.button
+              key={value}
+              layout
+              type="button"
+              onClick={() => onTermSelect(value)}
+              aria-label={`Look up ${value}`}
+              initial={
+                shouldReduceMotion
+                  ? { opacity: 1 }
+                  : { opacity: 0, y: 8, scale: 0.96 }
+              }
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={
+                shouldReduceMotion
+                  ? { opacity: 1 }
+                  : { opacity: 0, y: -6, scale: 0.98 }
+              }
+              transition={
+                shouldReduceMotion
+                  ? { duration: 0 }
+                  : { duration: 0.2, ease: CONTENT_EASE }
+              }
+              className="toy-surface toy-chip toy-suggestion toy-term-pill"
+              style={
+                {
+                  "--toy-rotate": index % 2 === 0 ? "-1.5deg" : "1.5deg",
+                } as CSSProperties
+              }
+            >
+              <span>{value}</span>
+            </motion.button>
+          ))}
+        </AnimatePresence>
+        {hiddenCount > 0 ? (
+          <button
+            type="button"
+            onClick={() => setIsExpanded((current) => !current)}
+            aria-expanded={isExpanded}
+            aria-label={
+              isExpanded
+                ? `Show fewer ${label.toLowerCase()}`
+                : `Show ${hiddenCount} more ${label.toLowerCase()}`
+            }
+            className="toy-surface toy-chip toy-suggestion toy-term-pill"
+            style={
+              {
+                "--toy-rotate": "0deg",
+              } as CSSProperties
+            }
           >
-            {value}
-          </span>
-        ))}
-        {summary.hiddenCount > 0 ? (
-          <span className="rounded-full border border-[#e3cf98] bg-[#f5e7c4] px-2.5 py-1 text-sm text-[var(--ink-subtle)]">
-            +{summary.hiddenCount} more
-          </span>
+            {isExpanded ? "Show less" : `+${hiddenCount} more`}
+          </button>
         ) : null}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -169,6 +219,7 @@ export default function ResultPanel({
   result,
   audioError,
   onPlayAudio,
+  onTermSelect,
 }: ResultPanelProps) {
   const shouldReduceMotion = useReducedMotion();
   const definitionsSectionRef = useRef<HTMLElement | null>(null);
@@ -467,11 +518,13 @@ export default function ResultPanel({
                         <TermPillGroup
                           label="Word-Class Synonyms"
                           values={section.meaningSynonyms}
+                          onTermSelect={onTermSelect}
                           className=""
                         />
                         <TermPillGroup
                           label="Word-Class Antonyms"
                           values={section.meaningAntonyms}
+                          onTermSelect={onTermSelect}
                           className=""
                         />
                       </div>
@@ -510,8 +563,16 @@ export default function ResultPanel({
                                 </div>
                               </div>
                             ) : null}
-                            <TermPillGroup label="Synonyms" values={sense.synonyms} />
-                            <TermPillGroup label="Antonyms" values={sense.antonyms} />
+                            <TermPillGroup
+                              label="Synonyms"
+                              values={sense.synonyms}
+                              onTermSelect={onTermSelect}
+                            />
+                            <TermPillGroup
+                              label="Antonyms"
+                              values={sense.antonyms}
+                              onTermSelect={onTermSelect}
+                            />
                           </article>
                         </li>
                       ))}
