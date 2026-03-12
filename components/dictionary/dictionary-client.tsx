@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
   useTransition,
+  type CSSProperties,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SearchForm from "@/components/dictionary/search-form";
@@ -19,7 +20,8 @@ import {
   NotFoundState,
 } from "@/components/dictionary/state-views";
 import {
-  SUGGESTED_TERMS,
+  buildSuggestionTerms,
+  DEFAULT_SUGGESTION_COUNT,
   isValidTermInput,
   sanitizeTerm,
 } from "@/lib/dictionary";
@@ -77,6 +79,19 @@ class LookupError extends Error {
   }
 }
 
+const readSuggestionWords = (payload: unknown) => {
+  if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
+    return [];
+  }
+
+  const wordsValue = (payload as { words?: unknown }).words;
+  if (!Array.isArray(wordsValue)) {
+    return [];
+  }
+
+  return wordsValue.filter((item): item is string => typeof item === "string");
+};
+
 export default function DictionaryClient({ initialQuery }: DictionaryClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -95,9 +110,18 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
   const [requestError, setRequestError] = useState<string | null>(null);
   const [audioError, setAudioError] = useState<string | null>(null);
   const [result, setResult] = useState<DictionaryResult | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>(() =>
+    buildSuggestionTerms({
+      excludeTerms: initialQuery ? [initialQuery] : [],
+      count: DEFAULT_SUGGESTION_COUNT,
+    }),
+  );
 
   const controllerRef = useRef<AbortController | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const suggestionControllerRef = useRef<AbortController | null>(null);
+  const suggestionRequestIdRef = useRef(0);
+  const initialSuggestionExcludeRef = useRef(initialQuery);
 
   const panelTransition = shouldReduceMotion
     ? { duration: 0 }
@@ -116,6 +140,56 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
     },
     [router, startNavigationTransition],
   );
+
+  const refreshSuggestions = useCallback(async (excludeTerm?: string) => {
+    suggestionControllerRef.current?.abort();
+
+    const controller = new AbortController();
+    const requestId = suggestionRequestIdRef.current + 1;
+    suggestionRequestIdRef.current = requestId;
+    suggestionControllerRef.current = controller;
+
+    try {
+      const params = new URLSearchParams({
+        count: String(DEFAULT_SUGGESTION_COUNT),
+      });
+      const sanitizedExclude = sanitizeTerm(excludeTerm ?? "");
+
+      if (sanitizedExclude) {
+        params.set("exclude", sanitizedExclude);
+      }
+
+      const response = await fetch(`/api/random-words?${params.toString()}`, {
+        cache: "no-store",
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to load random suggestions.");
+      }
+
+      const payload: unknown = await response.json().catch(() => null);
+      const nextSuggestions = buildSuggestionTerms({
+        preferredTerms: readSuggestionWords(payload),
+        excludeTerms: sanitizedExclude ? [sanitizedExclude] : [],
+        count: DEFAULT_SUGGESTION_COUNT,
+      });
+
+      if (suggestionRequestIdRef.current !== requestId) {
+        return;
+      }
+
+      setSuggestions(nextSuggestions);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return;
+      }
+    } finally {
+      if (suggestionControllerRef.current === controller) {
+        suggestionControllerRef.current = null;
+      }
+    }
+  }, []);
 
   const lookupWord = useCallback(async (term: string) => {
     controllerRef.current?.abort();
@@ -151,6 +225,7 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
 
       setResult(payload as DictionaryResult);
       setStatus("success");
+      void refreshSuggestions(term);
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
         return;
@@ -173,7 +248,7 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
         controllerRef.current = null;
       }
     }
-  }, []);
+  }, [refreshSuggestions]);
 
   useEffect(() => {
     if (!currentQuery) {
@@ -238,8 +313,13 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
   }, [currentQuery, inputValue, replaceQuery, searchParamsString]);
 
   useEffect(() => {
+    void refreshSuggestions(initialSuggestionExcludeRef.current);
+  }, [refreshSuggestions]);
+
+  useEffect(() => {
     return () => {
       controllerRef.current?.abort();
+      suggestionControllerRef.current?.abort();
       if (audioRef.current) {
         audioRef.current.pause();
       }
@@ -318,20 +398,22 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
       aria-busy={isBusy}
       className="board-shell relative flex min-h-full flex-col rounded-[2rem] p-5 sm:p-6 md:rounded-[2.4rem] md:p-7"
     >
-      <div className="board-starfield pointer-events-none absolute inset-0" aria-hidden>
+      <div className="board-starfield absolute inset-0" aria-hidden>
         {boardStars.map((star, index) => (
           <span
             key={`${star.top}-${star.left}-${index}`}
-            className="board-star"
+            className="board-star-shell"
             style={{
               top: star.top,
               left: star.left,
               width: `${star.size}px`,
               height: `${star.size}px`,
-              animationDuration: star.duration,
-              animationDelay: star.delay,
-            }}
-          />
+              "--star-duration": star.duration,
+              "--star-delay": star.delay,
+            } as CSSProperties}
+          >
+            <span className="board-star" />
+          </span>
         ))}
       </div>
 
@@ -352,7 +434,7 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
           value={inputValue}
           isLoading={isBusy}
           fieldError={fieldError}
-          suggestions={SUGGESTED_TERMS}
+          suggestions={suggestions}
           onClear={handleClear}
           onSuggestionSelect={handleSuggestionSelect}
           onValueChange={handleValueChange}
@@ -374,7 +456,7 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
                 className="h-full"
               >
                 <EmptyState
-                  suggestions={SUGGESTED_TERMS}
+                  suggestions={suggestions}
                   onSuggestionSelect={handleSuggestionSelect}
                 />
               </motion.div>
@@ -404,7 +486,7 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
               >
                 <NotFoundState
                   query={currentQuery || inputValue}
-                  suggestions={SUGGESTED_TERMS}
+                  suggestions={suggestions}
                   onSuggestionSelect={handleSuggestionSelect}
                 />
               </motion.div>

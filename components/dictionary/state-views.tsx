@@ -5,6 +5,7 @@ import {
   WarningCircle,
 } from "@phosphor-icons/react";
 import type { CSSProperties } from "react";
+import SuggestionChips from "@/components/dictionary/suggestion-chips";
 
 type SuggestionStateProps = {
   suggestions: readonly string[];
@@ -40,23 +41,11 @@ export function EmptyState({
         <p className="mt-3 max-w-[34ch] text-sm leading-relaxed text-[var(--ink-muted)]">
           Search an English word to load pronunciation, definitions, and source links.
         </p>
-        <div className="mt-5 flex flex-wrap gap-2">
-          {suggestions.map((term, index) => (
-            <button
-              key={term}
-              type="button"
-              onClick={() => onSuggestionSelect(term)}
-              className="toy-surface toy-chip toy-suggestion"
-              style={
-                {
-                  "--toy-rotate": index % 2 === 0 ? "-2deg" : "2deg",
-                } as CSSProperties
-              }
-            >
-              {term}
-            </button>
-          ))}
-        </div>
+        <SuggestionChips
+          suggestions={suggestions}
+          onSuggestionSelect={onSuggestionSelect}
+          className="mt-5 flex flex-wrap gap-2"
+        />
       </article>
 
       <article className="calm-panel grid gap-3 rounded-[1.8rem] p-5 sm:p-6">
@@ -134,23 +123,10 @@ export function NotFoundState({
         Nothing turned up for{" "}
         <span className="font-semibold">{query || "that search"}</span>. Try a nearby spelling or jump to a related term.
       </p>
-      <div className="flex flex-wrap gap-2">
-        {suggestions.map((term, index) => (
-          <button
-            key={term}
-            type="button"
-            onClick={() => onSuggestionSelect(term)}
-            className="toy-surface toy-chip toy-suggestion"
-            style={
-              {
-                "--toy-rotate": index % 2 === 0 ? "-2deg" : "2deg",
-              } as CSSProperties
-            }
-          >
-            {term}
-          </button>
-        ))}
-      </div>
+      <SuggestionChips
+        suggestions={suggestions}
+        onSuggestionSelect={onSuggestionSelect}
+      />
     </section>
   );
 }

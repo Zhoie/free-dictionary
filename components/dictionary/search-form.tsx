@@ -1,5 +1,6 @@
 import { MagnifyingGlass, X } from "@phosphor-icons/react";
 import type { CSSProperties } from "react";
+import SuggestionChips from "@/components/dictionary/suggestion-chips";
 
 type SearchFormProps = {
   value: string;
@@ -98,30 +99,11 @@ export default function SearchForm({
           <span className="section-label board-caption pt-3">
             Try
           </span>
-          <div className="flex flex-wrap gap-2">
-            {suggestions.map((term, index) => {
-              const isActive = value === term;
-
-              return (
-              <button
-                key={term}
-                type="button"
-                onClick={() => onSuggestionSelect(term)}
-                data-active={isActive ? "true" : "false"}
-                className="toy-surface toy-chip toy-suggestion"
-                style={
-                  {
-                    "--toy-rotate":
-                      index % 2 === 0 ? "-2deg" : "2deg",
-                    opacity: isActive ? 1 : 0.94,
-                  } as CSSProperties
-                }
-              >
-                {term}
-              </button>
-              );
-            })}
-          </div>
+          <SuggestionChips
+            suggestions={suggestions}
+            activeTerm={value}
+            onSuggestionSelect={onSuggestionSelect}
+          />
         </div>
       </div>
     </div>

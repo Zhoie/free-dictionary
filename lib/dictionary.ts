@@ -8,11 +8,26 @@ import type {
 
 const TERM_PATTERN = /^[a-zA-Z][a-zA-Z\s'-]*$/;
 
-export const SUGGESTED_TERMS = [
+export const DEFAULT_SUGGESTION_COUNT = 4;
+
+// Curated common words used when the random-word pipeline cannot verify enough terms.
+export const FALLBACK_SUGGESTION_TERMS = [
   "cadence",
   "lucid",
   "threshold",
   "harbor",
+  "meadow",
+  "lantern",
+  "echo",
+  "cinder",
+  "marble",
+  "ripple",
+  "glimmer",
+  "anchor",
+  "brisk",
+  "cobalt",
+  "drift",
+  "hollow",
 ] as const;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -41,6 +56,43 @@ export const sanitizeTerm = (input: string) =>
   input.trim().toLowerCase().replace(/\s+/g, " ");
 
 export const isValidTermInput = (term: string) => TERM_PATTERN.test(term);
+
+export const buildSuggestionTerms = ({
+  preferredTerms = [],
+  fallbackTerms = FALLBACK_SUGGESTION_TERMS,
+  excludeTerms = [],
+  count = DEFAULT_SUGGESTION_COUNT,
+}: {
+  preferredTerms?: readonly string[];
+  fallbackTerms?: readonly string[];
+  excludeTerms?: readonly string[];
+  count?: number;
+}) => {
+  const limit = Math.max(1, count);
+  const excluded = new Set(
+    excludeTerms
+      .map((term) => sanitizeTerm(term))
+      .filter((term) => term.length > 0),
+  );
+  const nextTerms: string[] = [];
+  const seen = new Set<string>();
+
+  const pushTerm = (value: string) => {
+    const term = sanitizeTerm(value);
+
+    if (!term || !isValidTermInput(term) || excluded.has(term) || seen.has(term)) {
+      return;
+    }
+
+    seen.add(term);
+    nextTerms.push(term);
+  };
+
+  preferredTerms.forEach(pushTerm);
+  fallbackTerms.forEach(pushTerm);
+
+  return nextTerms.slice(0, limit);
+};
 
 const normalizePhonetic = (value: unknown): PhoneticItem | null => {
   if (!isRecord(value)) {

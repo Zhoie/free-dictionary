@@ -7,7 +7,7 @@ import {
   SpeakerSlash,
 } from "@phosphor-icons/react";
 import { motion, type Variants, useReducedMotion } from "framer-motion";
-import { useMemo, type CSSProperties } from "react";
+import { useCallback, useMemo, useRef, type CSSProperties } from "react";
 import type { DictionaryResult } from "@/types/dictionary";
 
 type ResultPanelProps = {
@@ -171,6 +171,9 @@ export default function ResultPanel({
   onPlayAudio,
 }: ResultPanelProps) {
   const shouldReduceMotion = useReducedMotion();
+  const definitionsSectionRef = useRef<HTMLElement | null>(null);
+  const wordClassNavRef = useRef<HTMLDivElement | null>(null);
+  const sourcesSectionRef = useRef<HTMLElement | null>(null);
 
   const primaryEntry = result.entries[0];
   const titlePhonetic = uniqueStrings(
@@ -258,6 +261,19 @@ export default function ResultPanel({
       }).format(new Date(result.fetchedAt)),
     [result.fetchedAt],
   );
+  const resultSectionSlug = useMemo(() => slugify(result.term), [result.term]);
+  const definitionsSectionId = `definitions-section-${resultSectionSlug}`;
+  const wordClassNavId = `word-class-nav-${resultSectionSlug}`;
+  const sourcesSectionId = `sources-section-${resultSectionSlug}`;
+  const scrollToTarget = useCallback(
+    (target: HTMLElement | null, fallback?: HTMLElement | null) => {
+      (target ?? fallback)?.scrollIntoView({
+        behavior: shouldReduceMotion ? "auto" : "smooth",
+        block: "start",
+      });
+    },
+    [shouldReduceMotion],
+  );
 
   const panelTransition = shouldReduceMotion
     ? { duration: 0 }
@@ -323,15 +339,37 @@ export default function ResultPanel({
           </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
-          <span className="toy-surface toy-badge">
+          <button
+            type="button"
+            onClick={() => scrollToTarget(definitionsSectionRef.current)}
+            aria-label={`Jump to definitions for ${primaryEntry.word}`}
+            aria-controls={definitionsSectionId}
+            className="toy-surface toy-badge"
+          >
             {totalSenses} senses
-          </span>
-          <span className="toy-surface toy-badge">
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              scrollToTarget(wordClassNavRef.current, definitionsSectionRef.current)
+            }
+            aria-label={`Jump to word classes for ${primaryEntry.word}`}
+            aria-controls={wordClasses.length > 0 ? wordClassNavId : definitionsSectionId}
+            className="toy-surface toy-badge"
+          >
             {partOfSpeechCount} word classes
-          </span>
-          <span className="toy-surface toy-badge">
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              scrollToTarget(sourcesSectionRef.current, definitionsSectionRef.current)
+            }
+            aria-label={`Jump to sources for ${primaryEntry.word}`}
+            aria-controls={sourcesSectionId}
+            className="toy-surface toy-badge"
+          >
             {sources.length} sources
-          </span>
+          </button>
           <span className="toy-surface toy-badge">
             Updated {updatedLabel}
           </span>
@@ -347,13 +385,15 @@ export default function ResultPanel({
         ) : null}
       </motion.header>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.42fr)_minmax(18rem,0.78fr)] lg:items-start">
+      <div className="grid gap-4">
         <motion.section
+          ref={definitionsSectionRef}
+          id={definitionsSectionId}
           initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           exit={shouldReduceMotion ? undefined : { opacity: 0, y: -6 }}
           transition={panelTransition}
-          className="calm-panel rounded-[1.8rem] p-4 sm:p-5"
+          className="calm-panel scroll-mt-4 rounded-[1.8rem] p-4 sm:p-5"
         >
           <div className="flex flex-col">
             <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[rgb(115,88,40,0.14)] pb-4">
@@ -367,16 +407,20 @@ export default function ResultPanel({
                 </p>
               </div>
               {wordClasses.length > 0 ? (
-                <div className="flex flex-wrap gap-2 lg:max-w-[48%] lg:justify-end">
+                <div
+                  ref={wordClassNavRef}
+                  id={wordClassNavId}
+                  className="flex flex-wrap gap-2 lg:max-w-[48%] lg:justify-end"
+                >
                   {wordClasses.map((section, index) => (
                     <button
                       key={section.id}
                       type="button"
                       onClick={() => {
-                        document.getElementById(section.anchorId)?.scrollIntoView({
-                          behavior: shouldReduceMotion ? "auto" : "smooth",
-                          block: "start",
-                        });
+                        scrollToTarget(
+                          document.getElementById(section.anchorId),
+                          definitionsSectionRef.current,
+                        );
                       }}
                       aria-label={`Jump to ${section.partOfSpeech} definitions`}
                       className="toy-surface toy-badge min-h-[38px] px-3"
@@ -483,62 +527,65 @@ export default function ResultPanel({
           </div>
         </motion.section>
 
-        <aside className="grid content-start gap-4 lg:sticky lg:top-6">
-          <article className="calm-panel rounded-[1.8rem] p-4 sm:p-5">
-            <div className="border-b border-[rgb(115,88,40,0.14)] pb-4">
-              <p className="section-label text-[var(--ink-subtle)]">
-                Sources
-              </p>
-              <p className="mt-1 text-sm leading-relaxed text-[var(--ink-muted)]">
-                Reference links used for this lookup.
-              </p>
-            </div>
+        <section
+          ref={sourcesSectionRef}
+          id={sourcesSectionId}
+          className="calm-panel scroll-mt-4 rounded-[1.8rem] p-4 sm:p-5"
+          aria-label="Sources"
+        >
+          <div className="border-b border-[rgb(115,88,40,0.14)] pb-4">
+            <p className="section-label text-[var(--ink-subtle)]">
+              Sources
+            </p>
+            <p className="mt-1 text-sm leading-relaxed text-[var(--ink-muted)]">
+              Reference links used for this lookup.
+            </p>
+          </div>
 
-            <div className="mt-4 space-y-3">
-              {sources.length > 0 ? (
-                <ul className="space-y-3">
-                  {sources.map((source) => (
-                    <li key={source.id}>
-                      <article className="reading-card rounded-[1.4rem] p-4">
-                        <a
-                          href={source.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="board-link group flex items-start justify-between gap-3"
+          <div className="mt-4 space-y-3">
+            {sources.length > 0 ? (
+              <ul className="space-y-3">
+                {sources.map((source) => (
+                  <li key={source.id}>
+                    <article className="reading-card rounded-[1.4rem] p-4">
+                      <a
+                        href={source.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="board-link group flex items-start justify-between gap-3"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-[family:var(--font-display)] text-base font-semibold text-[var(--ink-strong)]">
+                            {formatSourceLabel(source.url)}
+                          </p>
+                          <p className="mt-2 break-all text-sm leading-relaxed text-[var(--ink-muted)]">
+                            {source.url}
+                          </p>
+                        </div>
+                        <span
+                          className="toy-surface inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                          style={
+                            {
+                              "--toy-bg": "var(--teal)",
+                              "--toy-shadow": "var(--teal-shadow)",
+                              "--toy-ink": "#174238",
+                            } as CSSProperties
+                          }
                         >
-                          <div className="min-w-0">
-                            <p className="font-[family:var(--font-display)] text-base font-semibold text-[var(--ink-strong)]">
-                              {formatSourceLabel(source.url)}
-                            </p>
-                            <p className="mt-2 break-all text-sm leading-relaxed text-[var(--ink-muted)]">
-                              {source.url}
-                            </p>
-                          </div>
-                          <span
-                            className="toy-surface inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-                            style={
-                              {
-                                "--toy-bg": "var(--teal)",
-                                "--toy-shadow": "var(--teal-shadow)",
-                                "--toy-ink": "#174238",
-                              } as CSSProperties
-                            }
-                          >
-                            <LinkSimple size={16} weight="bold" aria-hidden />
-                          </span>
-                        </a>
-                      </article>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <article className="reading-card rounded-[1.3rem] p-4 text-sm text-[var(--ink-muted)]">
-                  No source links are available for this term.
-                </article>
-              )}
-            </div>
-          </article>
-        </aside>
+                          <LinkSimple size={16} weight="bold" aria-hidden />
+                        </span>
+                      </a>
+                    </article>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <article className="reading-card rounded-[1.3rem] p-4 text-sm text-[var(--ink-muted)]">
+                No source links are available for this term.
+              </article>
+            )}
+          </div>
+        </section>
       </div>
     </motion.section>
   );
