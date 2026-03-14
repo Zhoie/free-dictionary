@@ -512,7 +512,6 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
               : {
                   opacity: 1,
                   y: isCondensed ? -2 : 0,
-                  scale: isCondensed ? 0.985 : 1,
                 }
           }
           className="board-intro-region"

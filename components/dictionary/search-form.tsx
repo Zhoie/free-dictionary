@@ -57,6 +57,7 @@ export default function SearchForm({
         </label>
         <span
           className="status-pill"
+          aria-hidden="true"
           style={
             {
               "--status-bg": isLoading ? "var(--yellow)" : "var(--purple)",
@@ -73,38 +74,40 @@ export default function SearchForm({
         </span>
       </div>
 
-      <div className="grid gap-3">
-        <div className="search-well group relative">
-          <MagnifyingGlass
-            size={19}
-            weight="bold"
-            aria-hidden
-            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--ink-label)] transition-colors duration-200 group-focus-within:text-[var(--ink-strong)]"
-          />
-          <input
-            id="dictionary-term"
-            name="term"
-            autoComplete="off"
-            inputMode="search"
-            enterKeyHint="search"
-            spellCheck={false}
-            value={value}
-            onChange={(event) => onValueChange(event.target.value)}
-            placeholder="Type a word, for example cadence"
-            className="search-input"
-            aria-invalid={fieldError ? "true" : undefined}
-            aria-describedby="dictionary-input-help dictionary-input-error"
-          />
-          {value ? (
-            <button
-              type="button"
-              onClick={onClear}
-              className="toy-clear absolute top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-full"
-              aria-label="Clear search"
-            >
-              <X size={16} weight="bold" aria-hidden />
-            </button>
-          ) : null}
+      <div className="search-form-body">
+        <div className="search-well-frame">
+          <div className="search-well group relative">
+            <MagnifyingGlass
+              size={18}
+              weight="bold"
+              aria-hidden
+              className="search-icon"
+            />
+            <input
+              id="dictionary-term"
+              name="term"
+              autoComplete="off"
+              inputMode="search"
+              enterKeyHint="search"
+              spellCheck={false}
+              value={value}
+              onChange={(event) => onValueChange(event.target.value)}
+              placeholder="Type a word, for example cadence"
+              className="search-input"
+              aria-invalid={fieldError ? "true" : undefined}
+              aria-describedby="dictionary-input-help dictionary-input-error"
+            />
+            {value ? (
+              <button
+                type="button"
+                onClick={onClear}
+                className="toy-clear search-clear"
+                aria-label="Clear search"
+              >
+                <X size={16} weight="bold" aria-hidden />
+              </button>
+            ) : null}
+          </div>
         </div>
 
         <p id="dictionary-input-help" className="search-help-copy board-caption">

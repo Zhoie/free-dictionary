@@ -69,10 +69,10 @@ export function LoadingState({ query }: LoadingStateProps) {
       </div>
 
       <div className="reading-card grid gap-3 rounded-[1.5rem] p-4">
-        <div className="h-8 w-40 animate-pulse rounded-full bg-[rgb(201,178,119)]/40 motion-reduce:animate-none" />
+        <div className="loading-skeleton h-8 w-40 animate-pulse rounded-full motion-reduce:animate-none" />
         <div className="space-y-3">
-          <div className="h-4 w-2/3 animate-pulse rounded-full bg-[rgb(201,178,119)]/38 motion-reduce:animate-none" />
-          <div className="h-4 w-full animate-pulse rounded-full bg-[rgb(201,178,119)]/38 motion-reduce:animate-none" />
+          <div className="loading-skeleton-soft h-4 w-2/3 animate-pulse rounded-full motion-reduce:animate-none" />
+          <div className="loading-skeleton-soft h-4 w-full animate-pulse rounded-full motion-reduce:animate-none" />
         </div>
       </div>
 
@@ -82,9 +82,9 @@ export function LoadingState({ query }: LoadingStateProps) {
             key={index}
             className="reading-card space-y-3 rounded-[1.3rem] p-4"
           >
-            <div className="h-3 w-28 animate-pulse rounded-full bg-[rgb(201,178,119)]/38 motion-reduce:animate-none" />
-            <div className="h-4 w-full animate-pulse rounded-full bg-[rgb(201,178,119)]/38 motion-reduce:animate-none" />
-            <div className="h-4 w-5/6 animate-pulse rounded-full bg-[rgb(201,178,119)]/38 motion-reduce:animate-none" />
+            <div className="loading-skeleton-soft h-3 w-28 animate-pulse rounded-full motion-reduce:animate-none" />
+            <div className="loading-skeleton-soft h-4 w-full animate-pulse rounded-full motion-reduce:animate-none" />
+            <div className="loading-skeleton-soft h-4 w-5/6 animate-pulse rounded-full motion-reduce:animate-none" />
           </article>
         ))}
       </div>
