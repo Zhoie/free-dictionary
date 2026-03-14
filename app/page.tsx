@@ -14,8 +14,8 @@ export default async function Home({ searchParams }: HomeProps) {
   const initialQuery = getInitialQuery(params.q);
 
   return (
-    <main className="overflow-x-hidden">
-      <div className="page-shell mx-auto max-w-[1460px] px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6">
+    <main aria-labelledby="dictionary-app-title">
+      <div className="page-shell w-full px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6 xl:px-8">
         <div className="page-shell-content w-full">
           <DictionaryClient initialQuery={initialQuery} />
         </div>

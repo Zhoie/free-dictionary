@@ -2,37 +2,53 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { MagnifyingGlass, X } from "@phosphor-icons/react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, FormEvent } from "react";
 import SuggestionChips from "@/components/dictionary/suggestion-chips";
 import { sanitizeTerm } from "@/lib/dictionary";
 
 type SearchFormProps = {
   value: string;
   isLoading: boolean;
+  isCondensed: boolean;
   showSuggestions: boolean;
   fieldError: string | null;
   suggestions: readonly string[];
   onClear: () => void;
   onSuggestionSelect: (value: string) => void;
+  onSubmit: () => void;
   onValueChange: (value: string) => void;
 };
 
 export default function SearchForm({
   value,
   isLoading,
+  isCondensed,
   showSuggestions,
   fieldError,
   suggestions,
   onClear,
   onSuggestionSelect,
+  onSubmit,
   onValueChange,
 }: SearchFormProps) {
   const shouldReduceMotion = useReducedMotion();
-  const hasSuggestionRail = showSuggestions && sanitizeTerm(value).length > 0;
+  const activeTerm = sanitizeTerm(value);
+  const hasSuggestionRail = showSuggestions && suggestions.length > 0;
+  const suggestionLabel = activeTerm ? "Try Next" : "Try These";
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    onSubmit();
+  };
 
   return (
-    <div className="grid gap-4">
-      <div className="flex items-center justify-between gap-3">
+    <form
+      role="search"
+      aria-label="Dictionary search"
+      className="search-form"
+      data-condensed={isCondensed ? "true" : "false"}
+      onSubmit={handleSubmit}
+    >
+      <div className="search-form-header">
         <label
           htmlFor="dictionary-term"
           className="section-label board-caption"
@@ -40,14 +56,16 @@ export default function SearchForm({
           Search Term
         </label>
         <span
-          className="toy-surface toy-badge"
+          className="status-pill"
           style={
             {
-              "--toy-bg": isLoading ? "var(--yellow)" : "var(--purple)",
-              "--toy-shadow": isLoading
+              "--status-bg": isLoading ? "var(--yellow)" : "var(--purple)",
+              "--status-shadow": isLoading
                 ? "var(--yellow-shadow)"
                 : "var(--purple-shadow)",
-              "--toy-ink": isLoading ? "#4f3810" : "var(--cream-soft)",
+              "--status-ink": isLoading
+                ? "var(--tone-sun-ink)"
+                : "var(--cream-soft)",
             } as CSSProperties
           }
         >
@@ -61,7 +79,7 @@ export default function SearchForm({
             size={19}
             weight="bold"
             aria-hidden
-            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--ink-subtle)] transition-colors duration-200 group-focus-within:text-[var(--ink-strong)]"
+            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--ink-label)] transition-colors duration-200 group-focus-within:text-[var(--ink-strong)]"
           />
           <input
             id="dictionary-term"
@@ -73,7 +91,7 @@ export default function SearchForm({
             value={value}
             onChange={(event) => onValueChange(event.target.value)}
             placeholder="Type a word, for example cadence"
-            className="search-input rounded-[1.35rem] px-11 py-3.5 pr-12 text-base"
+            className="search-input"
             aria-invalid={fieldError ? "true" : undefined}
             aria-describedby="dictionary-input-help dictionary-input-error"
           />
@@ -81,7 +99,7 @@ export default function SearchForm({
             <button
               type="button"
               onClick={onClear}
-              className="toy-clear absolute right-3 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full"
+              className="toy-clear absolute top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-full"
               aria-label="Clear search"
             >
               <X size={16} weight="bold" aria-hidden />
@@ -89,14 +107,14 @@ export default function SearchForm({
           ) : null}
         </div>
 
-        <p id="dictionary-input-help" className="board-caption text-sm leading-relaxed">
+        <p id="dictionary-input-help" className="search-help-copy board-caption">
           {isLoading
             ? "Searching the dictionary now."
             : "Results update as you type. Searches accept letters, spaces, apostrophes, and hyphens."}
         </p>
         <p
           id="dictionary-input-error"
-          className={`min-h-[1.25rem] text-sm text-[#ffc4ba] transition-opacity duration-200 ${
+          className={`search-error-copy min-h-[1.25rem] text-[var(--status-error)] transition-opacity duration-200 ${
             fieldError ? "opacity-100" : "opacity-0"
           }`}
           role="alert"
@@ -112,20 +130,21 @@ export default function SearchForm({
               animate={{ opacity: 1, y: 0 }}
               exit={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: -8 }}
               transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              className="flex flex-wrap items-start gap-3"
+              className="search-suggestion-rail"
             >
-              <span className="section-label board-caption pt-3">
-                Try
+              <span className="search-suggestion-label section-label board-caption">
+                {suggestionLabel}
               </span>
               <SuggestionChips
                 suggestions={suggestions}
-                activeTerm={value}
+                activeTerm={activeTerm}
                 onSuggestionSelect={onSuggestionSelect}
+                className="flex flex-wrap gap-2.5"
               />
             </motion.div>
           ) : null}
         </AnimatePresence>
       </div>
-    </div>
+    </form>
   );
 }

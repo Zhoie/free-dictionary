@@ -5,12 +5,6 @@ import {
   WarningCircle,
 } from "@phosphor-icons/react";
 import type { CSSProperties } from "react";
-import SuggestionChips from "@/components/dictionary/suggestion-chips";
-
-type SuggestionStateProps = {
-  suggestions: readonly string[];
-  onSuggestionSelect: (term: string) => void;
-};
 
 type ErrorStateProps = {
   message: string;
@@ -25,12 +19,11 @@ type NotFoundStateProps = {
   query: string;
 };
 
-export function EmptyState({
-  suggestions,
-  onSuggestionSelect,
-}: SuggestionStateProps) {
+const FEEDBACK_PANEL_CLASS = "feedback-panel calm-panel grid h-auto content-start gap-4 rounded-[1.8rem] p-5 sm:p-6";
+
+export function EmptyState() {
   return (
-    <section className="grid h-auto content-start gap-4 lg:h-full lg:grid-cols-[1.06fr_0.94fr]">
+    <section className="grid h-auto content-start gap-4 xl:grid-cols-[1.06fr_0.94fr]">
       <article className="calm-panel rounded-[1.8rem] p-5 sm:p-6">
         <div className="flex items-center gap-2 text-[var(--ink-strong)]">
           <Sparkle size={18} weight="fill" aria-hidden />
@@ -39,26 +32,19 @@ export function EmptyState({
           </h2>
         </div>
         <p className="mt-3 max-w-[34ch] text-sm leading-relaxed text-[var(--ink-muted)]">
-          Search an English word to load pronunciation, definitions, and source links.
+          Use the search field to load pronunciation, grouped definitions, and source links.
         </p>
-        <SuggestionChips
-          suggestions={suggestions}
-          onSuggestionSelect={onSuggestionSelect}
-          className="mt-5 flex flex-wrap gap-2"
-        />
       </article>
 
       <article className="calm-panel grid gap-3 rounded-[1.8rem] p-5 sm:p-6">
         <div>
-          <p className="section-label text-[var(--ink-subtle)]">
-            Included
-          </p>
+          <p className="section-label panel-label">Search Tips</p>
           <p className="mt-2 text-sm leading-relaxed text-[var(--ink-muted)]">
-            Pronunciation playback, phonetic text, grouped definitions, and source links.
+            Suggestion chips stay with the search field so you can pivot to another entry without losing the current result context.
           </p>
         </div>
         <div>
-          <p className="section-label text-[var(--ink-subtle)]">
+          <p className="section-label panel-label">
             Shareable URL
           </p>
           <p className="mt-2 text-sm leading-relaxed text-[var(--ink-muted)]">
@@ -72,9 +58,9 @@ export function EmptyState({
 
 export function LoadingState({ query }: LoadingStateProps) {
   return (
-    <section className="calm-panel grid h-auto content-start gap-4 rounded-[1.8rem] p-5 sm:p-6 lg:h-full">
+    <section className={FEEDBACK_PANEL_CLASS}>
       <div>
-        <p className="section-label text-[var(--ink-subtle)]">
+        <p className="section-label panel-label">
           Looking Up
         </p>
         <p className="mt-2 text-sm leading-relaxed text-[var(--ink-muted)]">
@@ -90,7 +76,7 @@ export function LoadingState({ query }: LoadingStateProps) {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 xl:grid-cols-2">
         {Array.from({ length: 4 }).map((_, index) => (
           <article
             key={index}
@@ -108,7 +94,7 @@ export function LoadingState({ query }: LoadingStateProps) {
 
 export function NotFoundState({ query }: NotFoundStateProps) {
   return (
-    <section className="calm-panel grid h-auto content-start gap-4 rounded-[1.8rem] p-5 sm:p-6 lg:h-full">
+    <section className={FEEDBACK_PANEL_CLASS}>
       <div className="flex items-center gap-2 text-[var(--ink-strong)]">
         <MagnifyingGlass size={18} weight="bold" aria-hidden />
         <h2 className="font-[family:var(--font-display)] text-[1.95rem] font-semibold tracking-[-0.04em]">
@@ -125,7 +111,7 @@ export function NotFoundState({ query }: NotFoundStateProps) {
 
 export function ErrorState({ message, onRetry }: ErrorStateProps) {
   return (
-    <section className="calm-panel grid h-auto content-start gap-4 rounded-[1.8rem] p-5 sm:p-6 lg:h-full">
+    <section className={FEEDBACK_PANEL_CLASS}>
       <div className="flex items-center gap-2 text-[var(--ink-strong)]">
         <WarningCircle size={18} weight="fill" aria-hidden />
         <h2 className="font-[family:var(--font-display)] text-[1.95rem] font-semibold tracking-[-0.04em]">
