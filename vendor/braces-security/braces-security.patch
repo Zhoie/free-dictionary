@@ -1,0 +1,58 @@
+--- a/lib/guard.js
++++ b/lib/guard.js
+@@ -0,0 +1,22 @@
++'use strict';
++
++// GHSA-vfj7-8cjw-p6xm: bound recursive walkers before entering them.
++const MAX_DEPTH = 128;
++const assertTree = ast => {
++  const pending = [[ast, 0]];
++  const seen = new Set();
++  let count = 0;
++  while (pending.length) {
++    const [node, depth] = pending.pop();
++    if (!node || typeof node !== 'object') continue;
++    if (depth > MAX_DEPTH || ++count > 10000 || seen.has(node)) {
++      throw new SyntaxError('Brace AST exceeds the supported depth or size');
++    }
++    seen.add(node);
++    if (Array.isArray(node.nodes)) {
++      for (const child of node.nodes) pending.push([child, depth + 1]);
++    }
++  }
++};
++
++module.exports = { MAX_DEPTH, assertTree };
+--- a/lib/parse.js
++++ b/lib/parse.js
+@@ -3,0 +4 @@
++const { MAX_DEPTH } = require('./guard');
+@@ -146,0 +148,3 @@
++      if (stack.length >= MAX_DEPTH) {
++        throw new SyntaxError('Brace pattern exceeds the supported nesting depth');
++      }
+@@ -212,0 +217,3 @@
++      if (stack.length >= MAX_DEPTH) {
++        throw new SyntaxError('Brace pattern exceeds the supported nesting depth');
++      }
+--- a/lib/compile.js
++++ b/lib/compile.js
+@@ -1,0 +2,2 @@
++
++const { assertTree } = require('./guard');
+@@ -6,0 +9 @@
++  assertTree(ast);
+--- a/lib/expand.js
++++ b/lib/expand.js
+@@ -1,0 +2,2 @@
++
++const { assertTree } = require('./guard');
+@@ -33,0 +36 @@
++  assertTree(ast);
+--- a/lib/stringify.js
++++ b/lib/stringify.js
+@@ -1,0 +2,2 @@
++
++const { assertTree } = require('./guard');
+@@ -5,0 +8 @@
++  assertTree(ast);

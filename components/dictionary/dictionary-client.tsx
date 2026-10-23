@@ -116,6 +116,17 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
   const [requestError, setRequestError] = useState<string | null>(null);
   const [audioError, setAudioError] = useState<string | null>(null);
   const [result, setResult] = useState<DictionaryResult | null>(null);
+  const [previousQuery, setPreviousQuery] = useState(initialQuery);
+  if (previousQuery !== currentQuery) {
+    const validQuery = currentQuery.length > 0 && isValidTermInput(currentQuery);
+    setPreviousQuery(currentQuery);
+    setInputValue(currentQuery);
+    setStatus(validQuery ? "loading" : "idle");
+    setFieldError(currentQuery && !validQuery ? INVALID_TERM_MESSAGE : null);
+    setRequestError(null);
+    setAudioError(null);
+    if (!validQuery) setResult(null);
+  }
   const [suggestions, setSuggestions] = useState<string[]>(() =>
     buildSuggestionTerms({
       excludeTerms: initialQuery ? [initialQuery] : [],
@@ -198,23 +209,18 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
     }
   }, []);
 
-  const lookupWord = useCallback(async (term: string) => {
+  const lookupWord = useCallback((term: string) => {
     controllerRef.current?.abort();
 
     const controller = new AbortController();
     controllerRef.current = controller;
 
-    setStatus("loading");
-    setRequestError(null);
-    setAudioError(null);
-
-    try {
-      const response = await fetch(`/api/dictionary?term=${encodeURIComponent(term)}`, {
+    return fetch(`/api/dictionary?term=${encodeURIComponent(term)}`, {
         cache: "no-store",
         signal: controller.signal,
-      });
-
+      }).then(async (response) => {
       const payload: unknown = await response.json().catch(() => null);
+      if (controller.signal.aborted) return;
       const { code, message } = readErrorDetails(payload);
 
       if (!response.ok) {
@@ -233,7 +239,7 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
       setResult(payload as DictionaryResult);
       setStatus("success");
       void refreshSuggestions(term);
-    } catch (error) {
+    }).catch((error: unknown) => {
       if (error instanceof DOMException && error.name === "AbortError") {
         return;
       }
@@ -250,11 +256,11 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
       setResult(null);
       setRequestError(lookupError.message);
       setStatus(lookupError.code === "NOT_FOUND" ? "not-found" : "error");
-    } finally {
+    }).finally(() => {
       if (controllerRef.current === controller) {
         controllerRef.current = null;
       }
-    }
+    });
   }, [refreshSuggestions]);
 
   const lookupTermImmediately = useCallback(
@@ -271,6 +277,7 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
       setAudioError(null);
 
       if (nextTerm === currentQuery) {
+        setStatus("loading");
         void lookupWord(nextTerm);
         return;
       }
@@ -283,24 +290,8 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
   );
 
   useEffect(() => {
-    if (!currentQuery) {
+    if (!currentQuery || !isValidTermInput(currentQuery)) {
       controllerRef.current?.abort();
-      setStatus("idle");
-      setResult(null);
-      setRequestError(null);
-      setAudioError(null);
-      return;
-    }
-
-    setInputValue(currentQuery);
-
-    if (!isValidTermInput(currentQuery)) {
-      controllerRef.current?.abort();
-      setFieldError(INVALID_TERM_MESSAGE);
-      setStatus("idle");
-      setResult(null);
-      setRequestError(null);
-      setAudioError(null);
       return;
     }
 
@@ -426,6 +417,9 @@ export default function DictionaryClient({ initialQuery }: DictionaryClientProps
 
   const handleRetry = useCallback(() => {
     if (currentQuery) {
+      setStatus("loading");
+      setRequestError(null);
+      setAudioError(null);
       void lookupWord(currentQuery);
     }
   }, [currentQuery, lookupWord]);
